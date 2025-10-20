@@ -18,6 +18,26 @@ const editingId = ref<number | null>(null)
 const message = ref('')
 const showMessage = ref(false)
 const messageType = ref<'success' | 'error'>('success')
+const confirmVisible = ref(false)
+const confirmUserId = ref<number | null>(null)
+
+const openConfirm = (id: number) => {
+  confirmUserId.value = id
+  confirmVisible.value = true
+}
+
+const confirmDelete = async () => {
+  if (confirmUserId.value !== null) {
+    await deleteUser(confirmUserId.value)
+    confirmVisible.value = false
+    confirmUserId.value = null
+  }
+}
+
+const cancelDelete = () => {
+  confirmVisible.value = false
+  confirmUserId.value = null
+}
 
 // 🌈 Background image change every 15 seconds
 const images = ['/bg1.jpg', '/bg4.jpg', '/bg2.png', '/bg3.jpg']
@@ -130,7 +150,6 @@ const cancelEdit = () => {
 
 // 🗑️ Delete user (DELETE)
 const deleteUser = async (id: number) => {
-  if (!confirm('Are you sure you want to delete this user?')) return
   try {
     const res = await fetch(`${API_URL}${id}/`, { method: 'DELETE' })
     if (!res.ok) {
@@ -143,6 +162,7 @@ const deleteUser = async (id: number) => {
     showPopup(`⚠️ ${err.message}`, 'error')
   }
 }
+
 </script>
 
 <template>
@@ -160,6 +180,21 @@ const deleteUser = async (id: number) => {
           {{ message }}
         </div>
       </transition>
+
+      <!-- Delete Confirmation Modal -->
+    <transition name="fade">
+    <div v-if="confirmVisible" class="confirm-overlay">
+        <div class="confirm-box">
+        <h3>🗑️ Confirm Deletion</h3>
+        <p>Are you sure you want to delete this user?</p>
+        <div class="confirm-buttons">
+            <button class="confirm-yes" @click="confirmDelete">Yes, Delete</button>
+            <button class="confirm-no" @click="cancelDelete">Cancel</button>
+        </div>
+        </div>
+    </div>
+    </transition>
+
 
       <!-- Table -->
       <div class="table-container">
@@ -182,7 +217,7 @@ const deleteUser = async (id: number) => {
               <td>{{ user.email }}</td>
               <td>
                 <button @click="editUser(user)" class="action-btn edit">Edit</button>
-                <button @click="deleteUser(user.id)" class="action-btn delete">Delete</button>
+                <button @click="openConfirm(user.id)" class="action-btn delete">Delete</button>
               </td>
             </tr>
           </tbody>
@@ -618,5 +653,88 @@ const deleteUser = async (id: number) => {
     left: 5%;
   }
 }
+
+/* 🧊 Confirmation Modal */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+.confirm-box {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 30px 40px;
+  text-align: center;
+  backdrop-filter: blur(10px) saturate(180%);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  animation: scaleIn 0.3s ease;
+}
+
+.confirm-box h3 {
+  color: #fff;
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+
+.confirm-box p {
+  color: #eee;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.confirm-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.confirm-yes,
+.confirm-no {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.confirm-yes {
+  background: linear-gradient(135deg, #ff4b5c, #dc3545);
+  color: white;
+}
+.confirm-yes:hover {
+  background: linear-gradient(135deg, #e63946, #c82333);
+  transform: translateY(-2px);
+}
+
+.confirm-no {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+}
+.confirm-no:hover {
+  background: linear-gradient(135deg, #5a6268, #343a40);
+  transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 
 </style>
